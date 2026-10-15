@@ -17,6 +17,7 @@ from app.db.models import (
     FieldReport,
     Notification,
     TranslatedTaskTemplate,
+    VillageVisit,
 )
 from app.db.clock import get_simulated_now
 from app.auth import hash_password
@@ -1323,5 +1324,204 @@ def seed_database(db: Session):
                 )
             )
     db.commit()
+
+    # Seed village visits for Phase 2B (Stitch Screen 7 / 8 cluster)
+    if db.query(VillageVisit).first() is None:
+        mitanin = db.query(User).filter(User.role == "mitanin").first()
+        m_id = mitanin.id if mitanin else 3
+        m_name = mitanin.name if mitanin else "Mitanin Asha"
+
+        demo_visits = [
+            VillageVisit(
+                village_id="VIL_A1",
+                block_id="BLK_A",
+                district_id="DIST_SAMPLE",
+                household_id="HH-14B",
+                household_name="Baghel Parivar (बघेल परिवार)",
+                hamlet="Kodenar Tola Hamlet",
+                head_of_household="Sukhlal Baghel",
+                family_size=5,
+                priority="urgent",
+                visit_reason="ANC 3rd Trimester • Severe Anemia Risk",
+                scheduled_date="2026-10-18",
+                status="scheduled",
+                assigned_mitanin_id=m_id,
+                assigned_mitanin_name=m_name,
+                last_visit_days_ago=12,
+                last_visit_notes="Missed CHC Ultrasound Referral. Reports bilateral ankle edema. Prior Hb: 8.4 g/dL.",
+                vulnerable_members=json.dumps([
+                    {
+                        "name": "Devki Kashyap",
+                        "name_hi": "देवकी कश्यप",
+                        "age": 22,
+                        "condition": "31w Gestation (EDD: 18 Nov)",
+                        "risk_note": "Severe Anemia Risk (Prev Hb: 8.4 g/dL) • Reports bilateral ankle edema",
+                        "dialect": "Halbi",
+                        "patient_id": "DK-8842",
+                        "abha_id": "ABHA-CG-8842-9102",
+                    }
+                ]),
+                protocols=json.dumps([
+                    {"id": "p1", "title": "Digital Hb Strip Check (TruePoint)", "checked": True},
+                    {"id": "p2", "title": "Dispense 30-day IFA Red Tablets", "checked": True},
+                    {"id": "p3", "title": "102 Van Pre-Booking Confirmation", "checked": False},
+                    {"id": "p4", "title": "Halbi Audio Triage & Diet Guide", "checked": False},
+                ]),
+                dialect="Halbi",
+                created_at=now,
+                updated_at=now,
+            ),
+            VillageVisit(
+                village_id="VIL_A1",
+                block_id="BLK_A",
+                district_id="DIST_SAMPLE",
+                household_id="HH-07",
+                household_name="Mandavi Parivar (मंडावी परिवार)",
+                hamlet="Interior Forest Ring",
+                head_of_household="Budhram Mandavi",
+                family_size=7,
+                priority="urgent",
+                visit_reason="Child SAM / MUAC < 11.5cm",
+                scheduled_date="2026-10-18",
+                status="scheduled",
+                assigned_mitanin_id=m_id,
+                assigned_mitanin_name=m_name,
+                last_visit_days_ago=4,
+                last_visit_notes="Re-admit check for NRC Tokapal. Persistent cough (8 days).",
+                vulnerable_members=json.dumps([
+                    {
+                        "name": "Raju Mandavi",
+                        "name_hi": "राजू मंडावी",
+                        "age": 4,
+                        "condition": "Child SAM (MUAC 11.2cm yellow-red border)",
+                        "risk_note": "Persistent cough (8 days) • Severe Acute Malnutrition",
+                        "dialect": "Gondi",
+                        "patient_id": "RM-0704",
+                    }
+                ]),
+                protocols=json.dumps([
+                    {"id": "m1", "title": "Shakir Strip MUAC Recalibration", "checked": True},
+                    {"id": "m2", "title": "Rapid Antigen Pf/Pv RDT Check", "checked": True},
+                    {"id": "m3", "title": "Amoxicillin Paediatric Stock Check", "checked": False},
+                    {"id": "m4", "title": "Gondi Audio Guidance on Micronutrient Paste", "checked": False},
+                ]),
+                dialect="Gondi",
+                created_at=now,
+                updated_at=now,
+            ),
+            VillageVisit(
+                village_id="VIL_A1",
+                block_id="BLK_A",
+                district_id="DIST_SAMPLE",
+                household_id="HH-22",
+                household_name="Markam Parivar (मरकाम परिवार)",
+                hamlet="Karanji Basti",
+                head_of_household="Manglu Markam",
+                family_size=4,
+                priority="routine",
+                visit_reason="Elderly Chronic Fever & RDT Follow-up",
+                scheduled_date="2026-10-18",
+                status="scheduled",
+                assigned_mitanin_id=m_id,
+                assigned_mitanin_name=m_name,
+                last_visit_days_ago=9,
+                last_visit_notes="Reported mild joint pain and intermittent chills.",
+                vulnerable_members=json.dumps([
+                    {
+                        "name": "Manglu Markam",
+                        "name_hi": "मंगलू मरकाम",
+                        "age": 68,
+                        "condition": "Intermittent chills & joint pain",
+                        "risk_note": "Fever history 3 days, malaria RDT recommended",
+                        "dialect": "Halbi",
+                        "patient_id": "MM-2201",
+                    }
+                ]),
+                protocols=json.dumps([
+                    {"id": "mk1", "title": "Pf/Pv Dual Antigen Cassette Test", "checked": False},
+                    {"id": "mk2", "title": "Oral Temperature & Pulse Check", "checked": False},
+                    {"id": "mk3", "title": "Paracetamol strip verification", "checked": False},
+                ]),
+                dialect="Halbi",
+                created_at=now,
+                updated_at=now,
+            ),
+            VillageVisit(
+                village_id="VIL_A1",
+                block_id="BLK_A",
+                district_id="DIST_SAMPLE",
+                household_id="HH-09",
+                household_name="Kashyap Parivar (कश्यप परिवार)",
+                hamlet="Muria Para Stream Point",
+                head_of_household="Phoolsingh Kashyap",
+                family_size=6,
+                priority="water",
+                visit_reason="Water / WASH Chlorination Sweep",
+                scheduled_date="2026-10-19",
+                status="scheduled",
+                assigned_mitanin_id=m_id,
+                assigned_mitanin_name=m_name,
+                last_visit_days_ago=15,
+                last_visit_notes="Near canal outflow; monsoon runoff observed.",
+                vulnerable_members=json.dumps([
+                    {
+                        "name": "Sita Kashyap",
+                        "name_hi": "सीता कश्यप",
+                        "age": 35,
+                        "condition": "Household Water Keeper",
+                        "risk_note": "Handpump chlorination advisory",
+                        "dialect": "Halbi",
+                        "patient_id": "SK-0902",
+                    }
+                ]),
+                protocols=json.dumps([
+                    {"id": "w1", "title": "Chlorine Residual Testing Kit check", "checked": False},
+                    {"id": "w2", "title": "Distribute 20 Halazone Water Tablets", "checked": False},
+                    {"id": "w3", "title": "Inspect drinking storage earthen pots", "checked": False},
+                ]),
+                dialect="Halbi",
+                created_at=now,
+                updated_at=now,
+            ),
+            VillageVisit(
+                village_id="VIL_A1",
+                block_id="BLK_A",
+                district_id="DIST_SAMPLE",
+                household_id="HH-03",
+                household_name="Poyam Parivar (पोयाम परिवार)",
+                hamlet="Sector 4 Hamlet",
+                head_of_household="Lachhan Poyam",
+                family_size=4,
+                priority="routine",
+                visit_reason="Postnatal Care (PNC Day 10) Check",
+                scheduled_date="2026-10-18",
+                status="completed",
+                assigned_mitanin_id=m_id,
+                assigned_mitanin_name=m_name,
+                last_visit_days_ago=0,
+                last_visit_notes="Newborn active, breastfeeding established, cord clean.",
+                vulnerable_members=json.dumps([
+                    {
+                        "name": "Sunita Poyam",
+                        "name_hi": "सुनीता पोयाम",
+                        "age": 24,
+                        "condition": "PNC Day 10 + Newborn Male",
+                        "risk_note": "Normal postpartum recovery",
+                        "dialect": "Halbi",
+                        "patient_id": "SP-0301",
+                    }
+                ]),
+                protocols=json.dumps([
+                    {"id": "p1", "title": "Neonatal Weight & Temperature", "checked": True},
+                    {"id": "p2", "title": "Umbilical Cord Infection Check", "checked": True},
+                    {"id": "p3", "title": "Exclusive Breastfeeding Counseling", "checked": True},
+                ]),
+                dialect="Halbi",
+                created_at=now,
+                updated_at=now,
+            ),
+        ]
+        db.add_all(demo_visits)
+        db.commit()
 
 

@@ -77,6 +77,8 @@ def init_db():
             "location_name": "VARCHAR(255)",
             "completion_notes": "TEXT",
             "evidence_attachment": "TEXT",
+            "encounter_id": "INTEGER",
+            "follow_up_key": "VARCHAR(64)",
         })
         _ensure_columns(conn, "field_reports", {
             "disease_type": "VARCHAR(32) DEFAULT 'malaria'",
@@ -92,6 +94,12 @@ def init_db():
             "coordinate_source": "VARCHAR(255)",
             "boundary_source": "VARCHAR(255)",
             "is_demo": "BOOLEAN DEFAULT 0",
+        })
+        _ensure_columns(conn, "patient_encounters", {
+            "follow_up_schedule": "TEXT",
+            "attestation": "TEXT",
+            "discharge_summary": "TEXT",
+            "completion_token": "VARCHAR(64)",
         })
 
 

@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { Check, ArrowLeft, Send, AlertTriangle, Calendar, Clock, ChevronRight } from "lucide-react";
+import { 
+  Check, 
+  AlertTriangle, 
+  Clock, 
+  MapPin, 
+  ShieldAlert 
+} from "lucide-react";
 import { useMeta } from "../hooks/useMeta";
+import { Button } from "../components/ui";
 
 interface AssignTaskProps {
   initialAlertId?: number;
@@ -32,10 +39,9 @@ interface MitaninUser {
 const TASK_TEMPLATES = [
   {
     id: "fever_testing",
-    label: "Fever testing",
-    titlePrefix: "Fever screening and rapid diagnostic testing sweep",
-    defaultInstruction: "Please visit 10 homes in {villages} and test fevers by {deadline}.",
-    previewAction: "Fever cases may rise in your area.",
+    label: "Fever Testing Sweep",
+    titlePrefix: "Fever screening and rapid diagnostic testing (RDT) sweep",
+    defaultInstruction: "Please visit households in {villages} and test febrile cases by {deadline}.",
     steps: [
       "Fever screening and rapid diagnostic test (RDT) sweep across selected hamlets.",
       "Check body temperature and record fever histories in daily register.",
@@ -44,10 +50,9 @@ const TASK_TEMPLATES = [
   },
   {
     id: "spraying_support",
-    label: "Spraying support",
+    label: "Spraying Support (IRS)",
     titlePrefix: "Indoor residual spraying (IRS) mobilisation and verification",
     defaultInstruction: "Please guide spraying teams across {villages} and check room coverage by {deadline}.",
-    previewAction: "Spraying teams are visiting your village.",
     steps: [
       "Mobilize households to keep rooms cleared for chemical spraying.",
       "Inspect chemical wall deposit and mark coverage cards.",
@@ -56,14 +61,24 @@ const TASK_TEMPLATES = [
   },
   {
     id: "screening",
-    label: "Screening",
+    label: "Maternal & Vulnerable Screening",
     titlePrefix: "High-risk community screening and net verification",
     defaultInstruction: "Please verify bed net usage and screen vulnerable households in {villages} by {deadline}.",
-    previewAction: "High transmission risk detected in your hamlet.",
     steps: [
       "Verify Long-Lasting Insecticidal Net (LLIN) condition in all dwellings.",
       "Target pregnant women and infants for preventive screening.",
       "Refer acute symptomatic individuals to the primary health centre.",
+    ],
+  },
+  {
+    id: "diarrhoea_ors",
+    label: "Diarrhoea & Safe Water Drive",
+    titlePrefix: "ORS-Zinc distribution and chlorination verification",
+    defaultInstruction: "Distribute ORS-Zinc packets and check drinking water chlorination by {deadline}.",
+    steps: [
+      "Distribute ORS-Zinc packets to households with pediatric diarrhoea.",
+      "Inspect village handpump / well chlorination and record turbidity.",
+      "Report persistent dehydration cases to sector ANM immediately.",
     ],
   },
 ];
@@ -76,9 +91,6 @@ export function AssignTask({
 }: AssignTaskProps) {
   const { meta } = useMeta();
 
-  // 3-step Stepper: 1 = Alert, 2 = Task, 3 = Review
-  const [currentStep, setCurrentStep] = useState<number>(2);
-
   // Available alerts and selected alert
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertData | null>(null);
@@ -89,39 +101,41 @@ export function AssignTask({
 
   // Form Fields
   const [selectedTemplate, setSelectedTemplate] = useState<string>("fever_testing");
-  const [taskTitle, setTaskTitle] = useState<string>("");
+  const [priorityLevel, setPriorityLevel] = useState<string>("High");
+  const [customTitle, setCustomTitle] = useState<string>("");
   const [selectedVillages, setSelectedVillages] = useState<string[]>([
-    "Sample Village A",
-    "Sample Village B",
-    "Sample Village C",
+    "Netanar Hamlet #1",
+    "Netanar Hamlet #2",
+    "Bade Arapur",
   ]);
-  const [deadlineDate, setDeadlineDate] = useState<string>("");
+
+  // Default deadline: next 5 days
+  const defaultDeadline = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 5);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
+
+  const [deadlineDate, setDeadlineDate] = useState<string>(defaultDeadline);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Available village list
   const availableVillages = useMemo(
     () => [
-      "Sample Village A",
-      "Sample Village B",
-      "Sample Village C",
-      "Sample Village D",
-      "Sample Village E",
+      "Netanar Hamlet #1",
+      "Netanar Hamlet #2",
+      "Bade Arapur",
+      "Chitrakote Para",
+      "Karanpur Sector",
     ],
     []
   );
 
-  // Default deadline to Friday / next 5 days
-  useEffect(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 5);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    setDeadlineDate(`${yyyy}-${mm}-${dd}`);
-  }, []);
-
-  // Fetch alerts for step 1 & prefill
+  // Fetch alerts for prefill
   useEffect(() => {
     fetch("http://127.0.0.1:8000/alerts")
       .then((res) => res.json())
@@ -147,9 +161,9 @@ export function AssignTask({
           setSelectedMitaninId(data[0].id);
         } else {
           const fallbackUsers: MitaninUser[] = [
-            { id: 1, name: "Mitanin Asha (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 1, availability: "Available" },
-            { id: 2, name: "Mitanin Rekha (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 3, availability: "Busy this week" },
-            { id: 3, name: "Mitanin Sunita (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 0, availability: "Available" },
+            { id: 1, name: "Mitanin Asha [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 1, availability: "Available" },
+            { id: 2, name: "Mitanin Rekha [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 3, availability: "Busy" },
+            { id: 3, name: "Mitanin Sunita [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 0, availability: "Available" },
           ];
           setMitanins(fallbackUsers);
           setSelectedMitaninId(fallbackUsers[0].id);
@@ -157,24 +171,27 @@ export function AssignTask({
       })
       .catch(() => {
         const fallbackUsers: MitaninUser[] = [
-          { id: 1, name: "Mitanin Asha (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 1, availability: "Available" },
-          { id: 2, name: "Mitanin Rekha (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 3, availability: "Busy this week" },
-          { id: 3, name: "Mitanin Sunita (sample)", role: "mitanin", unit_id: "BLK_A", open_tasks: 0, availability: "Available" },
+          { id: 1, name: "Mitanin Asha [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 1, availability: "Available" },
+          { id: 2, name: "Mitanin Rekha [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 3, availability: "Busy" },
+          { id: 3, name: "Mitanin Sunita [SAMPLE]", role: "mitanin", unit_id: "BLK_A", open_tasks: 0, availability: "Available" },
         ];
         setMitanins(fallbackUsers);
         setSelectedMitaninId(fallbackUsers[0].id);
       });
   }, []);
 
-  // Sync title when alert or template changes
-  useEffect(() => {
-    const tmpl = TASK_TEMPLATES.find((t) => t.id === selectedTemplate);
+  // Active template object
+  const activeTemplateObj = useMemo(() => {
+    return TASK_TEMPLATES.find((t) => t.id === selectedTemplate) || TASK_TEMPLATES[0];
+  }, [selectedTemplate]);
+
+  // Derived task title
+  const effectiveTaskTitle = useMemo(() => {
+    if (customTitle.trim()) return customTitle;
     const geoLabelCap = meta.geography_label ? meta.geography_label.charAt(0).toUpperCase() + meta.geography_label.slice(1) : "Unit";
-    const unitLabel = selectedAlert?.unit_name || (selectedAlert ? `${geoLabelCap} ${selectedAlert.unit_id}` : `Sample ${geoLabelCap} A`);
-    if (tmpl) {
-      setTaskTitle(`${tmpl.titlePrefix} - ${unitLabel}`);
-    }
-  }, [selectedTemplate, selectedAlert, meta.geography_label]);
+    const unitLabel = selectedAlert?.unit_name || (selectedAlert ? `${geoLabelCap} ${selectedAlert.unit_id}` : `Netanar Cluster`);
+    return `${activeTemplateObj.titlePrefix} — ${unitLabel}`;
+  }, [customTitle, activeTemplateObj, selectedAlert, meta.geography_label]);
 
   // Village chip toggle
   const toggleVillage = (v: string) => {
@@ -192,70 +209,18 @@ export function AssignTask({
     return mitanins.find((m) => m.id === selectedMitaninId) || mitanins[0];
   }, [mitanins, selectedMitaninId]);
 
-  // Deadline display string
-  const formattedDeadlineDisplay = useMemo(() => {
-    if (!deadlineDate) return "Friday, 16 Oct";
-    try {
-      const parts = deadlineDate.split("-");
-      if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        return d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
-      }
-    } catch {
-      // Fallback
-    }
-    return deadlineDate;
-  }, [deadlineDate]);
-
-  const deadlineDayName = useMemo(() => {
-    if (!deadlineDate) return "Friday";
-    try {
-      const parts = deadlineDate.split("-");
-      if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        return d.toLocaleDateString("en-US", { weekday: "long" });
-      }
-    } catch {
-      // Fallback
-    }
-    return "Friday";
-  }, [deadlineDate]);
-
-  // Villages summary text for live preview
-  const villagesSummaryText = useMemo(() => {
-    if (selectedVillages.length === 0) return "your village";
-    if (selectedVillages.length === 1) return selectedVillages[0];
-    if (
-      selectedVillages.length === 3 &&
-      selectedVillages.includes("Sample Village A") &&
-      selectedVillages.includes("Sample Village B") &&
-      selectedVillages.includes("Sample Village C")
-    ) {
-      return "Sample Village A to C";
-    }
-    return selectedVillages.join(", ");
-  }, [selectedVillages]);
-
-  // Active template object
-  const activeTemplateObj = useMemo(() => {
-    return TASK_TEMPLATES.find((t) => t.id === selectedTemplate) || TASK_TEMPLATES[0];
-  }, [selectedTemplate]);
-
-  // Escalation window hours from config (via useMeta)
-  const escalationHours = meta.escalation_hours || 48;
-
   // Submit Handler
   const handleSubmitTask = async () => {
-    if (!taskTitle.trim()) {
+    if (!effectiveTaskTitle.trim()) {
       setFormError("Task title is required.");
       return;
     }
     if (!currentMitanin) {
-      setFormError("Please select a Mitanin health worker.");
+      setFormError("Please select a frontline Mitanin worker.");
       return;
     }
     if (selectedVillages.length === 0) {
-      setFormError("Please select at least one village.");
+      setFormError("Please select at least one target hamlet.");
       return;
     }
     if (!deadlineDate) {
@@ -268,15 +233,18 @@ export function AssignTask({
 
     try {
       const deadlineIso = new Date(`${deadlineDate}T18:00:00Z`).toISOString();
+      const stepsToSubmit = [
+        ...activeTemplateObj.steps,
+        `Cover priority target hamlets: ${selectedVillages.join(", ")}.`,
+      ];
+
       const payload = {
         alert_id: selectedAlert?.id || 1,
-        title: taskTitle,
-        steps: [
-          ...activeTemplateObj.steps,
-          `Cover priority target villages: ${selectedVillages.join(", ")}.`,
-        ],
+        title: effectiveTaskTitle,
+        steps: stepsToSubmit,
         owner: currentMitanin.name,
         deadline: deadlineIso,
+        priority: priorityLevel,
       };
 
       const res = await fetch("http://127.0.0.1:8000/tasks", {
@@ -290,10 +258,7 @@ export function AssignTask({
         throw new Error(errorData.detail || "Failed to create task");
       }
 
-      // Successful task creation
       if (onTaskCreated) onTaskCreated();
-
-      // Navigate to task ledger
       if (onNavigateToLedger) {
         onNavigateToLedger();
       }
@@ -304,520 +269,436 @@ export function AssignTask({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-ink">
-      {/* 3-STEP STEPPER BAR */}
-      <div className="bg-white rounded-card-lg border border-borderline p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
-          {/* Step 1: Alert */}
-          <button
-            onClick={() => setCurrentStep(1)}
-            className="flex items-center gap-2.5 group transition-all text-left"
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                currentStep === 1
-                  ? "bg-purple text-white ring-4 ring-purple-light shadow-xs"
-                  : currentStep > 1
-                  ? "bg-forest text-white"
-                  : "bg-canvas text-muted border border-borderline"
-              }`}
-            >
-              {currentStep > 1 ? <Check className="w-4 h-4" /> : "1"}
-            </div>
-            <div>
-              <span className="text-[10px] font-semibold text-muted block uppercase tracking-wider">Step 1</span>
-              <span
-                className={`text-xs font-bold ${
-                  currentStep === 1 ? "text-purple" : "text-ink group-hover:text-purple"
-                }`}
-              >
-                Alert
-              </span>
-            </div>
-          </button>
-
-          <ChevronRight className="w-4 h-4 text-muted/60 hidden sm:block" />
-
-          {/* Step 2: Task */}
-          <button
-            onClick={() => setCurrentStep(2)}
-            className="flex items-center gap-2.5 group transition-all text-left"
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                currentStep === 2
-                  ? "bg-purple text-white ring-4 ring-purple-light shadow-xs"
-                  : currentStep > 2
-                  ? "bg-forest text-white"
-                  : "bg-canvas text-muted border border-borderline"
-              }`}
-            >
-              {currentStep > 2 ? <Check className="w-4 h-4" /> : "2"}
-            </div>
-            <div>
-              <span className="text-[10px] font-semibold text-muted block uppercase tracking-wider">Step 2</span>
-              <span
-                className={`text-xs font-bold ${
-                  currentStep === 2 ? "text-purple" : "text-ink group-hover:text-purple"
-                }`}
-              >
-                Task Parameters
-              </span>
-            </div>
-          </button>
-
-          <ChevronRight className="w-4 h-4 text-muted/60 hidden sm:block" />
-
-          {/* Step 3: Review */}
-          <button
-            onClick={() => setCurrentStep(3)}
-            className="flex items-center gap-2.5 group transition-all text-left"
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                currentStep === 3
-                  ? "bg-purple text-white ring-4 ring-purple-light shadow-xs"
-                  : "bg-canvas text-muted border border-borderline"
-              }`}
-            >
-              3
-            </div>
-            <div>
-              <span className="text-[10px] font-semibold text-muted block uppercase tracking-wider">Step 3</span>
-              <span
-                className={`text-xs font-bold ${
-                  currentStep === 3 ? "text-purple" : "text-ink group-hover:text-purple"
-                }`}
-              >
-                Review & Dispatch
-              </span>
-            </div>
-          </button>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 text-on-surface">
+      {/* 1. TOP HEADER & CONTEXT BAR (STITCH EXACT STYLING) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-error-container text-on-error-container text-[11px] font-bold uppercase tracking-wider">
+              Protocol Dispatch Level 1
+            </span>
+            <span className="text-xs text-on-surface-variant font-medium">
+              • ID: DSP-2024-{(selectedAlert?.id || 1) + 1100}
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-on-surface tracking-tight">
+            Dispatch Field Health Task • New Intervention Assignment
+          </h1>
+          <p className="text-xs text-on-surface-variant">
+            Frontline Epidemiological Outbreak Mitigation & Worker Workload Allocation
+          </p>
         </div>
 
-        {onNavigateBack && (
-          <button
-            onClick={onNavigateBack}
-            className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink transition-colors px-3 py-1.5 rounded-xl hover:bg-canvas border border-transparent hover:border-borderline shrink-0"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to alerts
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {onNavigateBack && (
+            <Button variant="outline" size="md" icon="arrow_back" onClick={onNavigateBack}>
+              Return to Alerts
+            </Button>
+          )}
+          {onNavigateToLedger && (
+            <Button variant="secondary" size="md" icon="menu_book" onClick={onNavigateToLedger}>
+              Task Ledger
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* MAIN TWO-COLUMN WORKFLOW: FORM (LEFT) vs LIVE PHONE PREVIEW (RIGHT) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ============================================================== */}
-        {/* LEFT COLUMN: 3-STEP FORM BODY (col-span-7) */}
-        {/* ============================================================== */}
-        <div className="lg:col-span-7 bg-white rounded-card-lg border border-borderline p-6 shadow-xs space-y-6">
-          {/* STEP 1 VIEW: ALERT SELECTOR & CONFIRMATION */}
-          {currentStep === 1 && (
-            <div className="space-y-5">
-              <div className="pb-3 border-b border-borderline/60">
-                <h2 className="text-base font-bold text-ink">Select originating alert</h2>
-                <p className="text-xs text-muted mt-0.5">
-                  Choose which alert to pre-fill the action task parameters from.
+      {/* 2. SOURCE INCIDENT AUTO-FILL ALERT BANNER */}
+      {selectedAlert && (
+        <div className="relative overflow-hidden rounded-xl bg-surface-container-low border border-slate-200/90 shadow-2xs p-4 sm:p-5">
+          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-error"></div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-2">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5 text-error" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold text-error uppercase tracking-wider">
+                    Automated Surveillance Trigger
+                  </span>
+                  <span className="text-[11px] font-bold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+                    #ALT-{selectedAlert.id} • {selectedAlert.risk} Risk
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-on-surface">
+                  Source Alert: {selectedAlert.unit_name || selectedAlert.unit_id} ({selectedAlert.forecast_period || "Forecast Window"})
+                </h3>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  Attribution: {selectedAlert.method_used === "weather_model" ? "Weather Model Surge Projection" : "Seasonal Baseline Endemic Threshold"}
                 </p>
-              </div>
-
-              <div className="space-y-3">
-                {alerts.map((a) => {
-                  const isSelected = selectedAlert?.id === a.id;
-                  const isHigh = a.risk === "High";
-                  const isMed = a.risk === "Medium";
-                  const chipColor = isHigh
-                    ? "bg-coral-light text-coral"
-                    : isMed
-                    ? "bg-amber-light text-amber"
-                    : "bg-forest-light text-forest";
-
-                  return (
-                    <div
-                      key={a.id}
-                      onClick={() => setSelectedAlert(a)}
-                      className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? "border-purple bg-purple-light/20 shadow-xs ring-1 ring-purple"
-                          : "border-borderline hover:border-purple/40 bg-white"
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-ink">
-                            {a.unit_name || `${meta.geography_label ? meta.geography_label.charAt(0).toUpperCase() + meta.geography_label.slice(1) : "Unit"} ${a.unit_id}`}
-                          </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${chipColor}`}>
-                            {a.risk}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted">
-                          Lead time: <span className="font-medium text-ink">{a.forecast_period}</span> · Method:{" "}
-                          <span className="font-medium text-ink capitalize">{a.method_used.replace("_", " ")}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {isSelected && (
-                          <span className="text-xs font-bold text-purple hidden sm:inline">Selected</span>
-                        )}
-                        <input
-                          type="radio"
-                          name="selectedAlertRadio"
-                          checked={isSelected}
-                          onChange={() => setSelectedAlert(a)}
-                          className="accent-purple w-4 h-4 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="pt-4 flex justify-end border-t border-borderline/60">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="px-5 py-2.5 bg-purple text-white text-xs font-semibold rounded-xl hover:bg-purple/90 transition-all shadow-xs flex items-center gap-2"
-                >
-                  <span>Continue to Task form</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
               </div>
             </div>
-          )}
 
-          {/* STEP 2 VIEW: TASK FORM */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              {/* Header Note with Pre-fill indicator */}
-              <div className="pb-3 border-b border-borderline/60">
-                <h2 className="text-base font-bold text-ink">Create task from alert</h2>
-                <p className="text-xs text-muted mt-0.5">
-                  Pre-filled from{" "}
-                  <span className="font-semibold text-ink">
-                    {selectedAlert?.unit_name ||
-                      (selectedAlert
-                        ? `${meta.geography_label ? meta.geography_label.charAt(0).toUpperCase() + meta.geography_label.slice(1) : "Unit"} ${selectedAlert.unit_id}`
-                        : `Sample ${meta.geography_label ? meta.geography_label.charAt(0).toUpperCase() + meta.geography_label.slice(1) : "Unit"} A`)}
-                  </span>{" "}
-                  ({selectedAlert?.risk || "High"} risk). Adjust parameters as required.
-                </p>
+            {alerts.length > 1 && (
+              <div className="flex items-center gap-2 shrink-0">
+                <label className="text-xs font-bold text-on-surface-variant">Switch Alert:</label>
+                <select
+                  value={selectedAlert.id}
+                  onChange={(e) => {
+                    const found = alerts.find((a) => a.id === Number(e.target.value));
+                    if (found) setSelectedAlert(found);
+                  }}
+                  className="text-xs bg-surface-container-lowest border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold text-on-surface focus:outline-none focus:border-primary"
+                >
+                  {alerts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      #ALT-{a.id}: {a.unit_name || a.unit_id} ({a.risk})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Form Error Banner */}
+      {formError && (
+        <div className="p-4 rounded-xl bg-error-container text-on-error-container border border-error/25 text-xs font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{formError}</span>
+        </div>
+      )}
+
+      {/* 3. MAIN 12-COLUMN DISPATCH LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT 8 COLUMNS: DISPATCH FORM SECTIONS */}
+        <div className="lg:col-span-8 flex flex-col gap-5">
+          {/* Section 1: Classification & Title */}
+          <section className="bg-surface-container-lowest rounded-xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  1
+                </div>
+                <h2 className="text-base font-bold text-on-surface">
+                  Task Classification & Priority Level
+                </h2>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Step 1 of 4
+              </span>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Template Selector */}
+              <div>
+                <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-1.5">
+                  Intervention Protocol Template
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {TASK_TEMPLATES.map((tmpl) => (
+                    <button
+                      key={tmpl.id}
+                      type="button"
+                      onClick={() => setSelectedTemplate(tmpl.id)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        selectedTemplate === tmpl.id
+                          ? "bg-primary/5 border-primary shadow-2xs ring-1 ring-primary/20"
+                          : "bg-surface-container-low border-slate-200 hover:bg-surface-container"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-on-surface">{tmpl.label}</span>
+                        {selectedTemplate === tmpl.id && (
+                          <span className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant line-clamp-1 mt-0.5">
+                        {tmpl.titlePrefix}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {formError && (
-                <div className="p-3.5 text-xs bg-coral-light text-coral border border-coral/30 rounded-xl flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span className="font-semibold">{formError}</span>
-                </div>
-              )}
-
-              {/* Task template selector buttons */}
+              {/* Priority Radio Matrix */}
               <div>
-                <label className="block text-xs font-bold text-ink mb-2">Task Template</label>
-                <div className="flex flex-wrap gap-2">
-                  {TASK_TEMPLATES.map((tmpl) => {
-                    const isSelected = selectedTemplate === tmpl.id;
-                    return (
-                      <button
-                        key={tmpl.id}
-                        type="button"
-                        onClick={() => setSelectedTemplate(tmpl.id)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                          isSelected
-                            ? "bg-purple text-white shadow-xs"
-                            : "bg-canvas text-ink hover:bg-purple-light/40 border border-borderline"
-                        }`}
-                      >
-                        {tmpl.label}
-                      </button>
-                    );
-                  })}
+                <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-1.5">
+                  Triage Priority Level
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["Critical", "High", "Medium", "Routine"].map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => setPriorityLevel(lvl)}
+                      className={`h-10 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
+                        priorityLevel === lvl
+                          ? lvl === "Critical"
+                            ? "bg-error-container text-on-error-container shadow-2xs font-extrabold"
+                            : lvl === "High"
+                            ? "bg-amber-100 text-amber-900 shadow-2xs font-extrabold"
+                            : "bg-primary text-on-primary shadow-2xs font-extrabold"
+                          : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                      }`}
+                    >
+                      {lvl}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Task Title Input */}
               <div>
-                <label className="block text-xs font-bold text-ink mb-1.5">Task Title</label>
+                <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-1">
+                  Intervention Directive Title
+                </label>
                 <input
                   type="text"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs font-semibold text-ink border border-borderline rounded-xl focus:outline-none focus:ring-2 focus:ring-purple bg-white shadow-xs"
-                  placeholder="Enter task title..."
+                  value={customTitle || effectiveTaskTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-on-surface bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary focus:outline-none"
+                  placeholder="Enter directive title..."
                 />
               </div>
+            </div>
+          </section>
 
-              {/* Villages Chips */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-ink">Target Villages</label>
-                  <span className="text-[11px] text-muted">
-                    {selectedVillages.length} selected
-                  </span>
+          {/* Section 2: Geographic Jurisdiction & Hamlets */}
+          <section className="bg-surface-container-lowest rounded-xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  2
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {availableVillages.map((v) => {
-                    const isSelected = selectedVillages.includes(v);
-                    return (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => toggleVillage(v)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                          isSelected
-                            ? "bg-purple-light text-purple border border-purple/40 font-semibold"
-                            : "bg-white text-muted hover:text-ink border border-borderline"
-                        }`}
-                      >
-                        {isSelected ? <Check className="w-3.5 h-3.5 text-purple" /> : <span className="text-muted">+</span>}
-                        <span>{v}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <h2 className="text-base font-bold text-on-surface">
+                  Geographic Jurisdiction & Target Hamlets
+                </h2>
               </div>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Step 2 of 4
+              </span>
+            </div>
 
-              {/* Assign to (Mitanin picker with open tasks & availability) */}
+            <div className="grid grid-cols-3 gap-3 bg-surface-container-low p-3 rounded-xl border border-slate-200/70 text-xs">
               <div>
-                <label className="block text-xs font-bold text-ink mb-2">Assign To Mitanin Frontline Worker</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {mitanins.map((mitanin) => {
-                    const isSelected = selectedMitaninId === mitanin.id;
-                    const isBusy = mitanin.availability?.toLowerCase().includes("busy");
-                    const openCount = mitanin.open_tasks ?? 0;
+                <span className="text-[10px] uppercase font-bold text-on-surface-variant">District</span>
+                <p className="font-bold text-on-surface">Bastar</p>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-on-surface-variant">Block</span>
+                <p className="font-bold text-on-surface">Tokapal</p>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-on-surface-variant">Sub-Center HQ</span>
+                <p className="font-bold text-primary">Netanar Sector</p>
+              </div>
+            </div>
 
+            <div>
+              <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-2">
+                Targeted Paras / Village Hamlets ({selectedVillages.length} Selected)
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                {availableVillages.map((v) => {
+                  const isChecked = selectedVillages.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => toggleVillage(v)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                        isChecked
+                          ? "bg-primary text-on-primary shadow-2xs"
+                          : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+                      }`}
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{v}</span>
+                      {isChecked && <Check className="w-3 h-3 ml-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* Section 3: Worker Roster & SLA Deadline */}
+          <section className="bg-surface-container-lowest rounded-xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  3
+                </div>
+                <h2 className="text-base font-bold text-on-surface">
+                  Frontline Mitanin Worker Assignment & Deadline
+                </h2>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Step 3 of 4
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Mitanin Selection */}
+              <div>
+                <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-1.5">
+                  Select Frontline Health Worker
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {mitanins.map((m) => {
+                    const isSelected = m.id === selectedMitaninId;
                     return (
                       <div
-                        key={mitanin.id}
-                        onClick={() => setSelectedMitaninId(mitanin.id)}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                        key={m.id}
+                        onClick={() => setSelectedMitaninId(m.id)}
+                        className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                           isSelected
-                            ? "border-purple bg-purple-light/20 shadow-xs ring-1 ring-purple"
-                            : "border-borderline hover:border-purple/40 bg-white"
+                            ? "bg-primary/5 border-primary ring-1 ring-primary/20 shadow-2xs"
+                            : "bg-surface-container-low border-slate-200 hover:bg-surface-container"
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-forest text-white font-bold text-xs flex items-center justify-center shrink-0">
-                            {mitanin.name.replace("Mitanin ", "").charAt(0) || "M"}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-bold text-xs">
+                            {m.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-ink">{mitanin.name}</div>
-                            <div className="text-[11px] text-muted mt-0.5">
-                              {openCount} open {openCount === 1 ? "task" : "tasks"} ·{" "}
-                              <span className={isBusy ? "text-coral font-semibold" : "text-forest font-semibold"}>
-                                {mitanin.availability || "Available"}
-                              </span>
-                            </div>
+                            <p className="font-bold text-xs text-on-surface leading-tight">{m.name}</p>
+                            <p className="text-[11px] text-on-surface-variant">
+                              {m.open_tasks || 0} active task(s) • {m.availability || "On Duty"}
+                            </p>
                           </div>
                         </div>
-
-                        {isSelected && (
-                          <div className="w-5 h-5 rounded-full bg-purple text-white flex items-center justify-center">
-                            <Check className="w-3 h-3" />
-                          </div>
-                        )}
+                        {isSelected && <span className="w-2.5 h-2.5 rounded-full bg-primary" />}
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Deadline & Acknowledgement / Escalation Window */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                {/* Deadline */}
+              {/* Target Window & Deadline */}
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-ink mb-1.5">Action Deadline</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={deadlineDate}
-                      onChange={(e) => setDeadlineDate(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 text-xs font-semibold text-ink border border-borderline rounded-xl focus:outline-none focus:ring-2 focus:ring-purple bg-white shadow-xs"
-                    />
-                    <Calendar className="w-4 h-4 text-muted absolute left-3 top-3" />
-                  </div>
+                  <label className="block text-xs font-bold text-on-surface uppercase tracking-wider mb-1.5">
+                    Target Completion Date
+                  </label>
+                  <input
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-on-surface bg-surface-container-low focus:bg-surface-container-lowest focus:border-primary focus:outline-none"
+                  />
                 </div>
 
-                {/* Acknowledgement window from config */}
-                <div>
-                  <label className="block text-xs font-bold text-ink mb-1.5">Reply Escalation Window</label>
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 text-xs border border-borderline rounded-xl bg-canvas text-ink shadow-xs">
-                    <Clock className="w-4 h-4 text-amber shrink-0" />
-                    <span className="font-semibold text-ink">
-                      {escalationHours} hours, then escalate to district
-                    </span>
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <Clock className="w-3.5 h-3.5 text-amber-700" />
+                    <span>SLA Escalation Window: {meta.escalation_hours || 48} Hours</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Bottom Action Buttons */}
-              <div className="pt-4 flex items-center justify-between border-t border-borderline/60">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-borderline text-ink hover:bg-canvas transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="px-6 py-2.5 text-xs font-semibold rounded-xl bg-purple text-white hover:bg-purple/90 transition-all shadow-xs flex items-center gap-2"
-                >
-                  <span>Review Task</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3 VIEW: REVIEW STEP */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <div className="pb-3 border-b border-borderline/60">
-                <h2 className="text-base font-bold text-ink">Review & dispatch task</h2>
-                <p className="text-xs text-muted mt-0.5">
-                  Verify the task parameters before dispatching to frontline worker.
-                </p>
-              </div>
-
-              {formError && (
-                <div className="p-3.5 text-xs bg-coral-light text-coral border border-coral/30 rounded-xl flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span className="font-semibold">{formError}</span>
-                </div>
-              )}
-
-              {/* Review Summary Card */}
-              <div className="p-5 rounded-2xl border border-borderline bg-canvas/40 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Task Title</span>
-                    <p className="text-sm font-bold text-ink mt-0.5">{taskTitle}</p>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-coral-light text-coral shrink-0">
-                    {selectedAlert?.risk?.toUpperCase() || "HIGH"} RISK
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-xs pt-3 border-t border-borderline/60">
-                  <div>
-                    <span className="text-[10px] text-muted uppercase tracking-wider block">Originating Alert</span>
-                    <span className="font-bold text-ink mt-0.5 block">
-                      {selectedAlert?.unit_name ||
-                        `${meta.geography_label ? meta.geography_label.charAt(0).toUpperCase() + meta.geography_label.slice(1) : "Unit"} ${selectedAlert?.unit_id || "A"}`}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted uppercase tracking-wider block">Assigned Mitanin</span>
-                    <span className="font-bold text-ink mt-0.5 block">{currentMitanin?.name}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted uppercase tracking-wider block">Target Villages</span>
-                    <span className="font-semibold text-ink mt-0.5 block">{selectedVillages.join(", ")}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted uppercase tracking-wider block">Action Deadline</span>
-                    <span className="font-semibold text-ink mt-0.5 block">{formattedDeadlineDisplay}</span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-borderline/60">
-                  <span className="text-[10px] text-muted uppercase tracking-wider block mb-1">Audit Policy</span>
-                  <p className="text-xs text-muted">
-                    Initial status will be set to <span className="font-semibold text-ink">sent</span>. If not replied within{" "}
-                    <span className="font-semibold text-ink">{escalationHours} hours</span>, task will automatically escalate to the district medical officer.
+                  <p className="text-[11px] leading-relaxed">
+                    If this task is not acknowledged or completed within {meta.escalation_hours || 48} hours, the system automatically escalates the alert to the Block Medical Officer.
                   </p>
                 </div>
               </div>
-
-              {/* Dispatch Action Buttons */}
-              <div className="pt-4 flex items-center justify-between border-t border-borderline/60">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-borderline text-ink hover:bg-canvas transition-colors"
-                >
-                  Back to edit
-                </button>
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleSubmitTask}
-                  className="px-6 py-2.5 text-xs font-semibold rounded-xl bg-forest text-white hover:bg-forest/90 transition-all shadow-xs flex items-center gap-2 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? "Sending..." : "Send to Mitanin"}</span>
-                </button>
-              </div>
             </div>
-          )}
+          </section>
+
+          {/* Section 4: Protocol Instructions */}
+          <section className="bg-surface-container-lowest rounded-xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                  4
+                </div>
+                <h2 className="text-base font-bold text-on-surface">
+                  Standard Operating Protocol Steps
+                </h2>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                Step 4 of 4
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {activeTemplateObj.steps.map((st, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-2.5 p-2.5 rounded-lg bg-surface-container-low border border-slate-200/70 text-xs"
+                >
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                    {idx + 1}
+                  </span>
+                  <span className="text-on-surface font-medium leading-relaxed">{st}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              {onNavigateBack && (
+                <Button variant="outline" size="md" onClick={onNavigateBack}>
+                  Cancel
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="md"
+                icon="send"
+                loading={submitting}
+                onClick={handleSubmitTask}
+              >
+                Dispatch Field Task
+              </Button>
+            </div>
+          </section>
         </div>
 
-        {/* ============================================================== */}
-        {/* RIGHT COLUMN: LIVE PHONE PREVIEW (col-span-5) */}
-        {/* ============================================================== */}
-        <div className="lg:col-span-5 flex flex-col items-center">
-          <div className="w-full mb-3 text-center sm:text-left">
-            <h3 className="text-sm font-bold text-ink">Live Mobile Preview</h3>
-            <p className="text-xs text-muted">Exact message delivered to Mitanin Sahayak</p>
-          </div>
+        {/* RIGHT 4 COLUMNS: DISPATCH SUMMARY & MOBILE PREVIEW */}
+        <div className="lg:col-span-4 flex flex-col gap-5">
+          {/* Dispatch Summary Card */}
+          <div className="bg-surface-container-lowest rounded-xl p-5 border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">
+                Dispatch Summary Dossier
+              </h3>
+            </div>
 
-          {/* Smartphone Frame Container */}
-          <div className="w-[320px] bg-[#1E1B2E] p-3 rounded-[40px] shadow-xl border-4 border-[#2D2942]">
-            {/* Phone Screen Glass */}
-            <div className="w-full bg-[#f8fafc] rounded-[32px] overflow-hidden flex flex-col min-h-[500px] border border-black/10">
-              {/* Speaker notch */}
-              <div className="h-5 bg-transparent flex justify-center items-center pt-1">
-                <div className="w-16 h-1.5 bg-[#2D2942]/40 rounded-full" />
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-on-surface-variant font-medium">Directive Priority</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  priorityLevel === "Critical"
+                    ? "bg-error-container text-on-error-container"
+                    : priorityLevel === "High"
+                    ? "bg-amber-100 text-amber-900"
+                    : "bg-primary/10 text-primary"
+                }`}>
+                  {priorityLevel}
+                </span>
               </div>
 
-              {/* App / SMS Header */}
-              <div className="bg-forest px-4 py-3 text-white flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-bold tracking-tight">Mitanin Sahayak</h4>
-                  <p className="text-[10px] text-white/80">Health Alert & Field Task</p>
-                </div>
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-on-surface-variant font-medium">Assigned Worker</span>
+                <span className="font-bold text-on-surface">{currentMitanin?.name}</span>
               </div>
 
-              {/* Message Bubble Body */}
-              <div className="p-4 flex-1 flex flex-col justify-between">
-                <div className="space-y-3">
-                  {/* SMS / IVR Text Card */}
-                  <div className="bg-white p-4 rounded-2xl shadow-xs border border-borderline space-y-2">
-                    <p className="text-xs font-bold text-ink leading-snug">
-                      {activeTemplateObj.previewAction}
-                    </p>
-                    <p className="text-xs text-muted leading-relaxed">
-                      Please visit 10 homes in <span className="font-semibold text-ink">{villagesSummaryText}</span> and test fevers by <span className="font-semibold text-ink">{deadlineDayName}</span>.
-                    </p>
-                  </div>
-
-                  {/* Local language indicator badge */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-purple-light text-purple">
-                    <span>Language: Hindi / Chhattisgarhi</span>
-                  </div>
-                </div>
-
-                {/* Simulated Frontline Action Buttons on Phone */}
-                <div className="space-y-2 pt-6">
-                  <div className="w-full py-2.5 px-3 bg-forest text-white text-xs font-bold rounded-xl text-center shadow-xs cursor-default">
-                    1. Mark Completed (Done)
-                  </div>
-                  <div className="w-full py-2.5 px-3 bg-amber text-white text-xs font-bold rounded-xl text-center shadow-xs cursor-default">
-                    2. Request Help / Supplies
-                  </div>
-                </div>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-on-surface-variant font-medium">Target Deadline</span>
+                <span className="font-bold text-on-surface">{deadlineDate || "Routine"}</span>
               </div>
 
-              {/* Home indicator bar */}
-              <div className="h-4 flex justify-center items-center pb-1">
-                <div className="w-24 h-1 bg-black/20 rounded-full" />
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-on-surface-variant font-medium">Target Hamlets</span>
+                <span className="font-bold text-primary">{selectedVillages.length} Paras</span>
               </div>
             </div>
+
+            <div className="p-3 bg-surface-container-low rounded-xl border border-slate-200 text-xs space-y-1">
+              <span className="text-[10px] uppercase font-bold text-on-surface-variant">Live Mobile Directive</span>
+              <p className="font-bold text-on-surface leading-snug">{effectiveTaskTitle}</p>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              icon="send"
+              loading={submitting}
+              onClick={handleSubmitTask}
+            >
+              Dispatch Task Now
+            </Button>
           </div>
         </div>
       </div>

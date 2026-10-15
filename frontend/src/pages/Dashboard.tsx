@@ -15,6 +15,7 @@ import { AssignTaskModal } from "../components/AssignTaskModal";
 import { AlertDetailModal } from "../components/AlertDetailModal";
 import { MultiDiseaseOverview } from "../components/MultiDiseaseOverview";
 import { useMeta } from "../hooks/useMeta";
+import { Badge, Button } from "../components/ui";
 
 interface DashboardProps {
   onRefreshNeeded?: () => void;
@@ -99,41 +100,44 @@ export function Dashboard({
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto text-ink">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto text-on-surface">
       {/* TOP SAFEGUARD, DATA FRESHNESS & REPORTING-PERIOD FILTER STRIP */}
       <section
         aria-label="Safeguards and Reporting Controls"
-        className="bg-white rounded-card-lg border border-borderline p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+        className="bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
       >
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-light text-amber text-[11px] font-bold uppercase">
-              Prototype — synthetic demo data
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Prototype — Synthetic Demo Data
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-forest-light text-forest text-[11px] font-semibold">
-              Freshness: Current reporting cycle
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              Freshness: Current Reporting Cycle
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-purple-light text-purple text-[11px] font-semibold">
-              Completeness: 96%
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary-fixed/80 text-on-primary-fixed-variant border border-primary-fixed-dim text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+              Data Completeness: 96%
             </span>
           </div>
-          <p className="text-xs text-muted">
-            Routine surveillance may identify some surges only after cases rise; earlier warning remains a challenge.{" "}
-            <span className="font-semibold text-ink">
+          <p className="text-xs text-on-surface-variant max-w-3xl leading-relaxed">
+            Routine surveillance may identify some surges only after clinical presentations rise; earlier warning remains a challenge.{" "}
+            <span className="font-semibold text-on-surface">
               Target forecast horizon: 2–4 weeks, subject to local validation.
             </span>
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <label htmlFor="reporting-period-select" className="text-xs font-semibold text-muted">
-            Reporting period:
+          <label htmlFor="reporting-period-select" className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+            Reporting Period:
           </label>
           <select
             id="reporting-period-select"
             value={reportingPeriod}
             onChange={(e) => setReportingPeriod(e.target.value as any)}
-            className="text-xs bg-canvas border border-borderline rounded-xl px-3 py-2 font-medium text-ink focus:outline-none focus:ring-2 focus:ring-purple"
+            className="text-xs bg-surface-container-low border border-slate-200 rounded-lg px-3 py-2 font-medium text-on-surface focus:outline-none focus:border-primary transition-colors"
           >
             <option value="all">Full Year (Jan–Dec)</option>
             <option value="monsoon">Monsoon Transmission Window (Jun–Oct)</option>
@@ -142,51 +146,104 @@ export function Dashboard({
         </div>
       </section>
 
-      {/* ROW 1: FOUR KPI CARDS */}
+      {/* ROW 1: FOUR KPI CARDS (STITCH CLINICAL TOKENS) */}
       <section aria-label="KPI Metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1 */}
-        <div className="bg-white rounded-card-lg border border-borderline p-5 shadow-sm flex flex-col justify-between">
-          <div className="text-xs text-muted font-medium">Active alerts</div>
-          <div className="text-3xl font-extrabold text-ink mt-1 tabular-nums">{activeAlerts}</div>
-          <div className="text-xs mt-2 flex items-center gap-1 font-medium">
-            <span className="text-coral font-bold">{highAlerts} high</span>
-            <span className="text-muted">·</span>
-            <span className="text-amber font-bold">{mediumAlerts} medium</span>
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between hover:shadow-xs transition-shadow relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-error-container/30 pointer-events-none group-hover:scale-110 transition-transform"></div>
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">
+              Active Health Alerts
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-error"></span> Urgent
+            </span>
+          </div>
+          <div className="my-2">
+            <div className="text-3xl font-extrabold text-on-surface tabular-nums">{activeAlerts}</div>
+            <div className="text-xs mt-1 flex items-center gap-1.5 font-medium">
+              <span className="text-error font-bold">{highAlerts} High</span>
+              <span className="text-on-surface-variant">·</span>
+              <span className="text-amber-700 font-bold">{mediumAlerts} Medium</span>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-on-surface-variant">
+            Surveillance threshold alerts
           </div>
         </div>
 
         {/* KPI 2 */}
-        <div className="bg-white rounded-card-lg border border-borderline p-5 shadow-sm flex flex-col justify-between">
-          <div className="text-xs text-muted font-medium">Tasks (Open / Overdue / Completed)</div>
-          <div className="text-3xl font-extrabold text-ink mt-1 tabular-nums">{openTasks}</div>
-          <div className="text-xs mt-2 flex items-center gap-1.5 font-medium">
-            <span className="text-amber font-bold">{waitingReply} pending</span>
-            <span className="text-muted">·</span>
-            <span className="text-coral font-bold">{overdueTasks} overdue</span>
-            <span className="text-muted">·</span>
-            <span className="text-forest font-bold">{completedTasks} done</span>
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between hover:shadow-xs transition-shadow relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-secondary-container/30 pointer-events-none group-hover:scale-110 transition-transform"></div>
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">
+              Open Field Tasks
+            </span>
+            <span className="p-1 rounded bg-secondary-container text-on-secondary-fixed">
+              <span className="material-symbols-outlined text-[16px]">assignment</span>
+            </span>
+          </div>
+          <div className="my-2">
+            <div className="text-3xl font-extrabold text-on-surface tabular-nums">{openTasks}</div>
+            <div className="text-xs mt-1 flex items-center gap-1.5 font-medium">
+              <span className="text-amber-700 font-bold">{waitingReply} Pending</span>
+              <span className="text-on-surface-variant">·</span>
+              <span className="text-error font-bold">{overdueTasks} Overdue</span>
+              <span className="text-on-surface-variant">·</span>
+              <span className="text-primary font-bold">{completedTasks} Closed</span>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-on-surface-variant">
+            Dispatched to frontline workers
           </div>
         </div>
 
         {/* KPI 3 */}
-        <div className="bg-white rounded-card-lg border border-borderline p-5 shadow-sm flex flex-col justify-between">
-          <div className="text-xs text-muted font-medium">
-            Replied within {meta.escalation_hours || 48} h
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between hover:shadow-xs transition-shadow relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-primary-fixed/20 pointer-events-none group-hover:scale-110 transition-transform"></div>
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">
+              Replied Within {meta.escalation_hours || 48}h
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+              SLA Standard
+            </span>
           </div>
-          <div className="text-3xl font-extrabold text-ink mt-1 tabular-nums">{repliedPct}%</div>
-          <div className="text-xs mt-2 text-muted">
-            Target 90% (proposed)
+          <div className="my-2">
+            <div className="text-3xl font-extrabold text-primary tabular-nums">{repliedPct}%</div>
+            <div className="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
+              <div
+                className="bg-primary h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(repliedPct, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-on-surface-variant">
+            Target SLA standard: 90%
           </div>
         </div>
 
         {/* KPI 4 */}
-        <div className="bg-white rounded-card-lg border border-borderline p-5 shadow-sm flex flex-col justify-between">
-          <div className="text-xs text-muted font-medium">
-            {geoLabelCapitalized}s using weather model
+        <div className="bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 shadow-2xs flex flex-col justify-between hover:shadow-xs transition-shadow relative overflow-hidden group">
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-surface-dim/30 pointer-events-none group-hover:scale-110 transition-transform"></div>
+          <div className="flex items-center justify-between pb-1">
+            <span className="text-[11px] uppercase tracking-wider text-on-surface-variant font-bold">
+              {geoLabelCapitalized}s Using Weather Model
+            </span>
+            <span className="p-1 rounded bg-surface-container text-on-surface-variant">
+              <span className="material-symbols-outlined text-[16px]">thunderstorm</span>
+            </span>
           </div>
-          <div className="text-3xl font-extrabold text-ink mt-1 tabular-nums">{weatherUnits} of {totalUnits}</div>
-          <div className="text-xs mt-2 text-muted">
-            {baselineUnits} use baseline (skill gate)
+          <div className="my-2">
+            <div className="text-3xl font-extrabold text-on-surface tabular-nums">
+              {weatherUnits} of {totalUnits}
+            </div>
+            <div className="text-xs text-on-surface-variant mt-1">
+              {baselineUnits} {geoLabelCapitalized}s rely on seasonal baseline
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-on-surface-variant">
+            Enforced by statistical skill gate
           </div>
         </div>
       </section>
@@ -206,33 +263,33 @@ export function Dashboard({
       {/* ROW 2: RISK OVERVIEW TILES & NEEDS ACTION */}
       <section aria-label="Risk and Action" className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Risk Overview (col-span-8) */}
-        <div className="lg:col-span-8 bg-white rounded-card-lg border border-borderline p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-borderline/60">
+        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <h2 className="text-base font-bold text-ink">
-                {geoLabelCapitalized} risk overview (ranked schematic — no fabricated boundary GIS)
+              <h2 className="text-base font-bold text-on-surface">
+                {geoLabelCapitalized} Risk Overview (Ranked Schematic)
               </h2>
-              <p className="text-xs text-muted mt-0.5">
-                Target forecast horizon: 2–4 weeks, subject to local validation · conditional on local data availability
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                Target forecast horizon: 2–4 weeks, subject to local validation • No fabricated administrative boundaries
               </p>
             </div>
-            <div className="px-3 py-1 bg-[#534AB7] text-white text-xs font-semibold rounded-full shadow-2xs">
-              Risk
-            </div>
+            <Badge variant="active" size="sm">
+              Epidemiological Rank
+            </Badge>
           </div>
 
-          {/* Grid of 6 Unit Tiles (2 rows x 3 cols) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-3">
+          {/* Grid of Unit Tiles (2 rows x 3 cols) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {unitRisks.map((unit: any) => {
               const isHigh = unit.risk === "High";
               const isMed = unit.risk === "Medium";
               const chipColor = isHigh
-                ? "bg-coral-light text-coral"
+                ? "bg-error-container text-on-error-container"
                 : isMed
-                ? "bg-amber-light text-amber"
-                : "bg-forest-light text-forest";
+                ? "bg-amber-100 text-amber-900"
+                : "bg-emerald-50 text-emerald-800";
 
-              const sparkColor = isHigh ? "#C8472A" : isMed ? "#A8650A" : "#3B6D11";
+              const sparkColor = isHigh ? "#ba1a1a" : isMed ? "#b45309" : "#00685f";
               const isWeather = unit.method_used === "weather_model";
 
               return (
@@ -245,31 +302,31 @@ export function Dashboard({
                       setDetailAlertId(unit.alert_id);
                     }
                   }}
-                  className="p-3 bg-white border border-borderline hover:border-purple/40 rounded-xl transition-all cursor-pointer shadow-2xs flex flex-col justify-between"
+                  className="p-3.5 bg-surface-container-lowest border border-slate-200/90 hover:border-primary/50 hover:shadow-xs rounded-xl transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between gap-1">
-                    <span className="font-bold text-xs text-ink truncate">{unit.unit_name}</span>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${chipColor}`}>
-                      {unit.risk.toUpperCase()}
+                  <div className="flex items-start justify-between gap-1 pb-1">
+                    <span className="font-bold text-xs text-on-surface truncate">{unit.unit_name}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${chipColor}`}>
+                      {unit.risk}
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-muted mt-1">
+                  <div className="text-[11px] text-on-surface-variant mt-1">
                     Horizon: {unit.lead_time || "2–4 wks (target)"}
                   </div>
-                  <div className="text-[10px] text-muted mt-0.5 flex items-center justify-between">
+                  <div className="text-[10px] text-on-surface-variant mt-0.5 flex items-center justify-between">
                     <span>Uncertainty: 80% PI</span>
-                    <span className={`font-semibold ${isWeather ? "text-purple" : "text-muted"}`}>
+                    <span className={`font-semibold ${isWeather ? "text-primary" : "text-on-surface-variant"}`}>
                       {isWeather ? "Weather model" : "Seasonal baseline"}
                     </span>
                   </div>
 
-                  <div className="my-1.5 flex items-center justify-center">
+                  <div className="my-2 flex items-center justify-center">
                     <Sparkline data={unit.sparkline} color={sparkColor} width={120} height={26} />
                   </div>
 
-                  <div className="text-[10px] text-muted text-right">
-                    cases, 6 {meta.unit_label}
+                  <div className="text-[10px] text-on-surface-variant text-right border-t border-slate-100 pt-1">
+                    Historical series, 6 {meta.unit_label}
                   </div>
                 </div>
               );
@@ -278,31 +335,33 @@ export function Dashboard({
         </div>
 
         {/* Needs Action List (col-span-4) */}
-        <div className="lg:col-span-4 bg-white rounded-card-lg border border-borderline p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-borderline/60">
-              <h2 className="text-base font-bold text-ink">Needs action</h2>
-              <span className="text-xs text-muted font-medium">{needsAction.length} alerts</span>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-base font-bold text-on-surface">Needs Action</h2>
+              <span className="text-xs text-on-surface-variant font-medium">
+                {needsAction.length} Alerts Require Dispatch
+              </span>
             </div>
 
             <div className="space-y-2.5 pt-3">
               {needsAction.map((item: any) => {
                 const isHigh = item.risk === "High";
-                const chipColor = isHigh ? "bg-coral-light text-coral" : "bg-amber-light text-amber";
+                const chipColor = isHigh ? "bg-error-container text-on-error-container" : "bg-amber-100 text-amber-900";
 
                 return (
                   <div
                     key={item.alert_id}
-                    className="p-2.5 rounded-xl border border-borderline bg-canvas/40 flex items-center justify-between gap-2"
+                    className="p-3 rounded-xl border border-slate-200 bg-surface-container-low/60 hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs text-ink truncate">{item.unit_name}</span>
-                        <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${chipColor}`}>
-                          {item.risk.toUpperCase()}
+                        <span className="font-bold text-xs text-on-surface truncate">{item.unit_name}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${chipColor}`}>
+                          {item.risk}
                         </span>
                       </div>
-                      <div className="text-[11px] text-muted truncate mt-0.5">
+                      <div className="text-[11px] text-on-surface-variant truncate mt-0.5">
                         {item.lead_time} · {item.confidence_label}
                       </div>
                     </div>
@@ -316,16 +375,17 @@ export function Dashboard({
                             setDetailAlertId(item.alert_id);
                           }
                         }}
-                        className="px-2 py-1 text-xs font-semibold text-purple hover:bg-purple-light rounded-lg transition-colors"
+                        className="px-2.5 py-1 text-xs font-semibold text-primary hover:bg-surface-container rounded-lg transition-colors"
                       >
                         Details
                       </button>
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => setAssignAlert(item)}
-                        className="px-3 py-1 bg-purple text-white text-xs font-semibold rounded-lg hover:bg-purple/90 transition-colors shadow-2xs"
                       >
                         Assign
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 );
@@ -338,44 +398,44 @@ export function Dashboard({
       {/* ROW 3: FORECAST CHART & SKILL GATE */}
       <section aria-label="Forecast Intelligence" className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* District Forecast Chart (col-span-8) */}
-        <div className="lg:col-span-8 bg-white rounded-card-lg border border-borderline p-5 sm:p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-borderline/60 gap-1">
+        <div className="lg:col-span-8 bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-100 gap-2">
             <div>
-              <h2 className="text-base font-bold text-ink">District forecast</h2>
-              <p className="text-xs text-muted">
-                {meta.granularity ? meta.granularity.charAt(0).toUpperCase() + meta.granularity.slice(1) : "Period"} cases · weather model vs seasonal baseline · tested on later periods
+              <h2 className="text-base font-bold text-on-surface">District Epidemiological Forecast</h2>
+              <p className="text-xs text-on-surface-variant">
+                {meta.granularity ? meta.granularity.charAt(0).toUpperCase() + meta.granularity.slice(1) : "Period"} cases · Weather model vs Seasonal baseline · Tested on held-out periods
               </p>
             </div>
 
             {/* Custom Chart Legend */}
-            <div className="flex items-center flex-wrap gap-3 text-[11px] font-medium text-muted">
+            <div className="flex items-center flex-wrap gap-3 text-[11px] font-medium text-on-surface-variant">
               <span className="flex items-center gap-1">
-                <span className="w-3 h-0.5 bg-ink" /> Actual cases
+                <span className="w-3 h-0.5 bg-slate-800" /> Actual cases
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 border-b-2 border-dashed border-[#8E8B9E]" /> Seasonal baseline
+                <span className="w-3 border-b-2 border-dashed border-slate-400" /> Baseline
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-0.5 bg-purple" /> Weather model
+                <span className="w-3 h-0.5 bg-primary" /> Weather model
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 bg-[#EEEDFE] rounded-xs" /> 80% range
+                <span className="w-2.5 h-2.5 bg-primary-fixed/40 rounded-xs" /> 80% range
               </span>
             </div>
           </div>
 
           {/* Chart Canvas */}
           {forecastData && forecastData.length > 0 ? (
-            <div className="h-52 w-full pt-2 relative">
+            <div className="h-56 w-full pt-2 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={forecastData} margin={{ top: 12, right: 15, left: -15, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E3E1EC" vertical={false} />
-                  <XAxis dataKey="period" stroke="#6B6880" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#6B6880" fontSize={11} tickLine={false} axisLine={false} domain={[0, 420]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="period" stroke="#64748b" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} domain={[0, 420]} />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: "#FFFFFF", 
-                      borderColor: "#E3E1EC", 
+                      borderColor: "#cbd5e1", 
                       borderRadius: "8px",
                       fontSize: "12px",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
@@ -384,15 +444,16 @@ export function Dashboard({
                   {/* Alert level reference line */}
                   <ReferenceLine 
                     y={260} 
-                    stroke="#C8472A" 
+                    stroke="#ba1a1a" 
                     strokeDasharray="4 4" 
-                    label={{ value: "alert level", position: "top", fill: "#C8472A", fontSize: 10, offset: 5 }} 
+                    label={{ value: "Epidemic Alert Threshold", position: "top", fill: "#ba1a1a", fontSize: 10, offset: 5 }} 
                   />
                   {/* 80% Confidence Range Area */}
                   <Area 
                     type="monotone" 
                     dataKey="ci_upper" 
-                    fill="#EEEDFE" 
+                    fill="#6bd8cb" 
+                    fillOpacity={0.2}
                     stroke="none" 
                     isAnimationActive={false}
                   />
@@ -400,16 +461,16 @@ export function Dashboard({
                     type="monotone" 
                     dataKey="actual" 
                     name="Actual" 
-                    stroke="#1F1D2B" 
+                    stroke="#0f172a" 
                     strokeWidth={2.5} 
-                    dot={{ r: 3, fill: "#1F1D2B" }} 
+                    dot={{ r: 3, fill: "#0f172a" }} 
                     connectNulls={false}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="baseline" 
                     name="Seasonal baseline" 
-                    stroke="#8E8B9E" 
+                    stroke="#64748b" 
                     strokeWidth={2} 
                     strokeDasharray="4 4" 
                     dot={false}
@@ -419,52 +480,52 @@ export function Dashboard({
                     type="monotone" 
                     dataKey="weather_model" 
                     name="Weather model" 
-                    stroke="#534AB7" 
+                    stroke="#00685f" 
                     strokeWidth={2.5} 
-                    dot={{ r: 4, fill: "#534AB7" }} 
+                    dot={{ r: 4, fill: "#00685f" }} 
                     connectNulls={true}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
-              <div className="absolute bottom-1 right-36 text-[10px] text-muted font-medium">
-                forecast
+              <div className="absolute bottom-1 right-28 text-[10px] text-on-surface-variant font-medium">
+                Model Projection Window
               </div>
             </div>
           ) : (
-            <div className="h-52 flex flex-col items-center justify-center text-muted text-xs bg-canvas/30 rounded-xl mt-2">
-              <p className="font-semibold text-ink">No forecast data available for this selection.</p>
+            <div className="h-56 flex flex-col items-center justify-center text-on-surface-variant text-xs bg-surface-container-low/40 rounded-xl mt-2">
+              <p className="font-semibold text-on-surface">No forecast data available for this selection.</p>
               <p className="text-[11px] mt-1">Please ensure model runs have completed or select another region.</p>
             </div>
           )}
         </div>
 
         {/* Skill Gate Card (col-span-4) */}
-        <div className="lg:col-span-4 bg-white rounded-card-lg border border-borderline p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-surface-container-lowest rounded-xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between space-y-3">
           <div>
-            <div className="pb-2 border-b border-borderline/60">
-              <h2 className="text-base font-bold text-ink">Skill gate</h2>
-              <p className="text-[11px] text-muted mt-0.5">
-                Weather drives an alert only where it beat the baseline in tests
+            <div className="pb-2 border-b border-slate-100">
+              <h2 className="text-base font-bold text-on-surface">Skill Gate (Honest Validation)</h2>
+              <p className="text-[11px] text-on-surface-variant mt-0.5">
+                Weather drives an alert only where it demonstrated statistical win over baseline
               </p>
             </div>
 
             {/* List of Units */}
-            <div className="space-y-2 pt-2.5">
+            <div className="space-y-2.5 pt-3">
               {skillGate.map((item: any) => {
                 const isWeather = item.method_used === "weather_model";
                 const pct = Math.round(item.win_share * 100);
 
                 return (
                   <div key={item.unit_id} className="flex items-center gap-2.5 text-xs">
-                    <span className="w-16 font-semibold text-ink truncate text-[11px]">
+                    <span className="w-16 font-semibold text-on-surface truncate text-[11px]">
                       {item.unit_name.replace("Sample ", "")}
                     </span>
 
                     {/* Progress Bar */}
-                    <div className="flex-1 h-2.5 bg-canvas rounded-full overflow-hidden border border-borderline/50">
+                    <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden border border-slate-200">
                       <div
                         className={`h-full rounded-full transition-all ${
-                          isWeather ? "bg-[#534AB7]" : "bg-[#8E8B9E]"
+                          isWeather ? "bg-primary" : "bg-slate-400"
                         }`}
                         style={{ width: `${pct}%` }}
                       />
@@ -472,10 +533,10 @@ export function Dashboard({
 
                     {/* Badge Chip */}
                     <span
-                      className={`w-16 text-center py-0.5 rounded-md text-[10px] font-bold ${
+                      className={`w-16 text-center py-0.5 rounded text-[10px] font-bold ${
                         isWeather
-                          ? "bg-purple-light text-purple"
-                          : "bg-canvas text-muted border border-borderline"
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : "bg-surface-container text-on-surface-variant border border-slate-200"
                       }`}
                     >
                       {isWeather ? "Weather" : "Baseline"}
@@ -486,12 +547,11 @@ export function Dashboard({
             </div>
           </div>
 
-          <div className="text-[10px] text-muted mt-2 pt-2 border-t border-borderline/50">
-            Bar = share of test periods where weather model was better (simulated)
+          <div className="text-[10px] text-on-surface-variant mt-2 pt-2 border-t border-slate-100">
+            Win share = share of validation periods where weather model outperformed baseline.
           </div>
         </div>
       </section>
-
 
       {/* Interactive Modals */}
       {assignAlert && (

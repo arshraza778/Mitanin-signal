@@ -15,12 +15,18 @@ import { EmployeeDashboard } from "./pages/EmployeeDashboard";
 import { SupervisorDashboard } from "./pages/SupervisorDashboard";
 import { DiseaseDetail } from "./pages/DiseaseDetail";
 import { VoiceTasksPage } from "./pages/VoiceTasksPage";
+import { VillageVisitPlanner } from "./pages/VillageVisitPlanner";
+import { ActiveVillageVisit } from "./pages/ActiveVillageVisit";
+import { ScreeningRiskTriage } from "./pages/ScreeningRiskTriage";
+import { PatientRegistration } from "./pages/PatientRegistration";
+import { VisitCompletionFollowUp } from "./pages/VisitCompletionFollowUp";
 import { MitaninSahayakChatbot } from "./components/MitaninSahayakChatbot";
 import { I18nProvider, useI18n } from "./i18n/I18nContext";
 import {
   LocationSelectorModal,
   type SelectedLocationState,
 } from "./components/LocationSelectorModal";
+import { clearSyncedItems } from "./services/offlineSync";
 import { useMeta } from "./hooks/useMeta";
 
 const DEFAULT_LOCATION: SelectedLocationState = {
@@ -48,7 +54,12 @@ function AppInner() {
       p === "/settings" ||
       p === "/tasks" ||
       p === "/alerts" ||
-      p === "/voice-tasks"
+      p === "/voice-tasks" ||
+      p === "/village-planner" ||
+      p === "/active-encounter" ||
+      p === "/screening-triage" ||
+      p === "/patient-registration" ||
+      p === "/visit-completion"
     ) {
       return true;
     }
@@ -108,8 +119,13 @@ function AppInner() {
 
   const getInitialTab = () => {
     if (typeof window === "undefined") return "dashboard";
-    if (window.location.pathname === "/mitanin") return "mitanin";
+    if (window.location.pathname === "/mitanin" || window.location.hash === "#mitanin") return "mitanin";
     if (window.location.pathname === "/voice-tasks" || window.location.hash === "#voice-tasks") return "voice-tasks";
+    if (window.location.pathname === "/village-planner" || window.location.hash === "#village-planner") return "village-planner";
+    if (window.location.pathname === "/active-encounter" || window.location.hash === "#active-encounter") return "active-encounter";
+    if (window.location.pathname === "/screening-triage" || window.location.hash === "#screening-triage") return "screening-triage";
+    if (window.location.pathname === "/patient-registration" || window.location.hash === "#patient-registration") return "patient-registration";
+    if (window.location.pathname === "/visit-completion" || window.location.hash === "#visit-completion") return "visit-completion";
     if (window.location.pathname === "/evidence" || window.location.hash === "#evidence") return "evidence";
     if (window.location.pathname === "/ledger" || window.location.hash === "#ledger") return "ledger";
     if (window.location.pathname === "/settings" || window.location.hash === "#settings") return "settings";
@@ -129,15 +145,49 @@ function AppInner() {
   };
 
   const initialIsMobileRoute =
-    typeof window !== "undefined" && window.location.pathname === "/mitanin";
+    typeof window !== "undefined" &&
+    (window.location.pathname === "/mitanin" || window.location.hash === "#mitanin");
 
   const [currentTab, setCurrentTab] = useState<string>(getInitialTab());
   const [previousTab, setPreviousTab] = useState<string>("public-dashboard");
+  const [visitContext, setVisitContext] = useState<{
+    householdId?: string;
+    visitId?: number;
+    encounterId?: number;
+    patientData?: any;
+  }>({});
   const [selectedDiseaseType, setSelectedDiseaseType] = useState<string>("malaria");
   const [selectedAlertId, setSelectedAlertId] = useState<number | undefined>(undefined);
   const [alertCount, setAlertCount] = useState<number>(3);
   const [taskCount, setTaskCount] = useState<number>(5);
   const [periodText, setPeriodText] = useState<string>("Week of 12 Oct");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+
+  const handleSwitchPortalMode = (mode: "public" | "field_employee" | "supervisor") => {
+    if (mode === "public") {
+      setPortalMode("public");
+      switchTab("public-dashboard");
+      return;
+    }
+    if (mode === "field_employee") {
+      if (currentUser?.role === "field_employee" && authToken) {
+        setPortalMode("field_employee");
+        switchTab("emp-dashboard");
+      } else {
+        setShowPortalLanding(true);
+      }
+      return;
+    }
+    if (mode === "supervisor") {
+      if (currentUser?.role === "supervisor" && authToken) {
+        setPortalMode("supervisor");
+        switchTab("sup-dashboard");
+      } else {
+        setShowPortalLanding(true);
+      }
+      return;
+    }
+  };
 
   useEffect(() => {
     const handlePopState = () => {
@@ -169,6 +219,9 @@ function AppInner() {
   }, [currentTab, portalMode]);
 
   const switchTab = (tab: string) => {
+    if (tab !== currentTab) {
+      setPreviousTab(currentTab);
+    }
     const nextTab =
       portalMode === "public" && (tab === "evidence" || tab === "settings")
         ? "public-dashboard"
@@ -313,6 +366,7 @@ function AppInner() {
       localStorage.removeItem("ms_auth_token");
       sessionStorage.removeItem("ms_current_user");
       sessionStorage.removeItem("ms_portal_active");
+      clearSyncedItems();
     } catch {}
     setShowLocationGate(false);
     setShowPortalLanding(true);
@@ -434,6 +488,16 @@ function AppInner() {
         return t("nav.task_ledger");
       case "mitanin":
         return t("nav.mitanin_mobile");
+      case "village-planner":
+        return "Village Visit Planner & Roster";
+      case "active-encounter":
+        return "Active Village Visit & Patient Encounter";
+      case "screening-triage":
+        return "Screening & Explainable Risk Triage";
+      case "patient-registration":
+        return "Patient Registration & Intake";
+      case "visit-completion":
+        return "Visit Finalization & Follow-up";
       case "evidence":
         return t("nav.model_evidence");
       case "settings":
@@ -455,6 +519,9 @@ function AppInner() {
         portalMode={portalMode}
         currentUser={currentUser}
         locationBreadcrumb={selectedLocation.breadcrumb}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        onSwitchPortalMode={handleSwitchPortalMode}
         onOpenPortalSwitcher={() => setShowPortalLanding(true)}
         onLogout={handleLogout}
         onChangeLocation={() => setShowLocationModal(true)}
@@ -472,6 +539,9 @@ function AppInner() {
           periodText={periodText}
           locationBreadcrumb={selectedLocation.breadcrumb}
           currentUser={currentUser}
+          alertCount={alertCount}
+          onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+          onOpenAlerts={() => switchTab("alerts")}
           onChangeLocation={() => setShowLocationModal(true)}
           onOpenPortalLanding={() => setShowPortalLanding(true)}
           onLogout={handleLogout}
@@ -506,6 +576,89 @@ function AppInner() {
               authToken={authToken}
               currentUser={currentUser}
               selectedLocation={selectedLocation}
+            />
+          )}
+
+          {currentTab === "village-planner" && (
+            <VillageVisitPlanner
+              authToken={authToken}
+              selectedLocation={selectedLocation}
+              onStartEncounter={(hhId, vId) => {
+                setVisitContext((prev) => ({ ...prev, householdId: hhId, visitId: vId }));
+                switchTab("active-encounter");
+              }}
+              onNavigateScreening={() => switchTab("screening-triage")}
+              onNavigatePatientRegistration={(hhId) => {
+                if (hhId) {
+                  setVisitContext((prev) => ({ ...prev, householdId: hhId }));
+                }
+                switchTab("patient-registration");
+              }}
+              onBack={() => switchTab(portalMode === "field_employee" ? "emp-dashboard" : "dashboard")}
+              onChangeLocation={() => setShowLocationModal(true)}
+            />
+          )}
+
+          {currentTab === "active-encounter" && (
+            <ActiveVillageVisit
+              authToken={authToken}
+              householdId={visitContext.householdId || "HH-14B"}
+              visitId={visitContext.visitId || 1}
+              selectedLocation={selectedLocation}
+              onNavigateScreening={(encId, pData) => {
+                setVisitContext((prev) => ({ ...prev, encounterId: encId, patientData: pData }));
+                switchTab("screening-triage");
+              }}
+              onCompleteEncounter={() => {
+                refreshSummaryCounts();
+                switchTab("visit-completion");
+              }}
+              onBack={() => switchTab("village-planner")}
+            />
+          )}
+
+          {currentTab === "visit-completion" && (
+            <VisitCompletionFollowUp
+              authToken={authToken}
+              encounterId={visitContext.encounterId}
+              visitId={visitContext.visitId}
+              householdId={visitContext.householdId || "HH-14B"}
+              selectedLocation={selectedLocation}
+              currentUser={currentUser}
+              onNavigatePlanner={() => switchTab("village-planner")}
+              onFinishComplete={() => {
+                refreshSummaryCounts();
+                switchTab("village-planner");
+              }}
+              onBack={() => switchTab("active-encounter")}
+            />
+          )}
+
+          {currentTab === "screening-triage" && (
+            <ScreeningRiskTriage
+              authToken={authToken}
+              encounterId={visitContext.encounterId}
+              initialPatientData={visitContext.patientData}
+              selectedLocation={selectedLocation}
+              onBack={() => switchTab(previousTab || "village-planner")}
+              onNavigateReferrals={() => switchTab("tasks")}
+            />
+          )}
+
+          {currentTab === "patient-registration" && (
+            <PatientRegistration
+              authToken={authToken}
+              selectedLocation={selectedLocation}
+              initialHouseholdId={visitContext.householdId || "HH-04"}
+              onNavigateScreening={(pData) => {
+                setVisitContext((prev) => ({ ...prev, patientData: pData }));
+                switchTab("screening-triage");
+              }}
+              onNavigateEncounter={(hhId, pData) => {
+                setVisitContext((prev) => ({ ...prev, householdId: hhId, patientData: pData }));
+                switchTab("active-encounter");
+              }}
+              onBack={() => switchTab(previousTab || "village-planner")}
             />
           )}
 

@@ -290,4 +290,118 @@ class MalariaCaseForecastRequest(BaseModel):
         return self
 
 
+# ============================================================================
+# Phase 2B: Stitch Screens 6, 7 & 8 Schemas
+# ============================================================================
+
+class UpdateVisitStatusRequest(BaseModel):
+    status: str = Field(..., description="Target visit status: scheduled, in_progress, completed, cancelled")
+    notes: Optional[str] = Field(None, description="Optional visit notes or reason")
+
+
+class CreateEncounterRequest(BaseModel):
+    visit_id: Optional[int] = Field(None, description="Optional linked village visit ID")
+    household_id: str = Field(..., description="Household identifier, e.g. HH-14B")
+    household_name: str = Field(..., description="Household name, e.g. Baghel Parivar")
+    patient_name: str = Field(..., description="Patient name, e.g. Devki Kashyap")
+    patient_identifier: Optional[str] = Field(None, description="Patient RCH or ABHA identifier")
+    age: int = Field(26, ge=0, le=125, description="Patient age in years")
+    gender: str = Field("Female", description="Patient gender: Female, Male, Other")
+    gestation_weeks: Optional[float] = Field(None, ge=0.0, le=45.0, description="ANC Gestation in weeks")
+    village_id: Optional[str] = Field(None, description="Location village unit ID")
+    block_id: Optional[str] = Field(None, description="Location block unit ID")
+    district_id: Optional[str] = Field(None, description="Location district unit ID")
+    danger_signs: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Danger sign check status")
+    vitals: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Point-of-care vital measurements")
+    optical_strip_result: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Optical test strip validation")
+    audio_notes: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Audio memo recording details")
+    supplies: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Supplies distributed")
+    emergency_escalation: Optional[bool] = Field(False, description="Flag for emergency 102/108 ambulance referral")
+    emergency_escalation_details: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Emergency escalation details")
+    submission_token: Optional[str] = Field(None, description="Client idempotency token to prevent duplicate saves")
+
+
+class UpdateEncounterRequest(BaseModel):
+    elapsed_seconds: Optional[int] = Field(None, ge=0, description="Active session timer in seconds")
+    danger_signs: Optional[Dict[str, Any]] = Field(None, description="Danger signs update")
+    vitals: Optional[Dict[str, Any]] = Field(None, description="Vitals update")
+    optical_strip_result: Optional[Dict[str, Any]] = Field(None, description="Optical test strip update")
+    audio_notes: Optional[Dict[str, Any]] = Field(None, description="Audio memo update")
+    supplies: Optional[Dict[str, Any]] = Field(None, description="Supplies update")
+    emergency_escalation: Optional[bool] = Field(None, description="Emergency flag update")
+    emergency_escalation_details: Optional[Dict[str, Any]] = Field(None, description="Emergency details update")
+
+
+class CompleteEncounterRequest(BaseModel):
+    notes: Optional[str] = Field(None, description="Closing visit encounter notes")
+    supplies_dispensed: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Supplies dispensed during encounter")
+    follow_up_schedule: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Scheduled follow-up appointments and transport")
+    attestation: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Consent and worker signature attestation")
+    discharge_summary: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Discharge summary, audio instructions, and findings")
+    submission_token: Optional[str] = Field(None, description="Idempotency token for completion")
+
+
+class CreateScreeningRequest(BaseModel):
+    encounter_id: Optional[int] = Field(None, description="Optional active encounter link")
+    patient_name: str = Field(..., description="Patient name")
+    patient_identifier: Optional[str] = Field(None, description="Patient identifier (ABHA/RCH)")
+    age: int = Field(26, ge=0, le=125, description="Patient age")
+    gender: str = Field("Female", description="Patient gender")
+    gestation_weeks: Optional[float] = Field(None, ge=0.0, le=45.0, description="ANC Gestational age in weeks")
+    mode: str = Field("standard", description="Triage mode: 'standard' or 'highrisk'")
+    vitals: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Screening vitals: hb, bp, rbs, temp, pulse, spo2, etc.")
+    danger_signs: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Checked danger signs")
+    submission_token: Optional[str] = Field(None, description="Idempotency token")
+
+
+class CreatePatientRequest(BaseModel):
+    full_name_en: str = Field(..., min_length=1, max_length=128, description="Full Name in English")
+    full_name_hi: Optional[str] = Field(None, description="Full Name in Devanagari")
+    age: int = Field(28, ge=0, le=125, description="Estimated age or age in years")
+    dob: Optional[str] = Field(None, description="DOB in DD/MM/YYYY or YYYY-MM-DD")
+    gender: str = Field("Female", description="Gender: Female, Male, Other")
+    contact_number: Optional[str] = Field(None, description="Contact phone number (10 digits)")
+    contact_owner: Optional[str] = Field(None, description="Owner of the contact number")
+    primary_dialect: str = Field("Halbi", description="Primary tribal dialect: Halbi, Gondi, Chhattisgarhi, Bhatri, Hindi")
+    gram_panchayat: Optional[str] = Field("Karanji", description="Gram Panchayat")
+    faliya_para: Optional[str] = Field("Patelpara, Sector 04", description="Faliya / Para")
+    assigned_mitanin_id: Optional[int] = Field(None, description="Assigned Mitanin user ID")
+    assigned_mitanin_name: Optional[str] = Field("Sunita Mandavi", description="Assigned Mitanin name")
+    household_id: Optional[str] = Field(None, description="Household identifier")
+    district_id: Optional[str] = Field(None, description="District identifier")
+    block_id: Optional[str] = Field(None, description="Block identifier")
+    village_id: Optional[str] = Field(None, description="Village identifier")
+    id_mode: str = Field("abha", description="Identification mode: abha, aadhaar, offline")
+    abha_number: Optional[str] = Field(None, description="14-digit ABHA number")
+    provisional_id: Optional[str] = Field(None, description="Provisional local token")
+    aadhaar_masked: Optional[str] = Field(None, description="Masked Aadhaar indicator (never store full number)")
+    ration_card_tier: Optional[str] = Field("AAY", description="Ration card tier: AAY, BPL, etc.")
+    sickle_cell_trait: Optional[str] = Field("Carrier", description="Sickle cell status: Screening Pending, Carrier, Disease, Negative")
+    currently_pregnant: bool = Field(False, description="Currently pregnant flag")
+    lmp_date: Optional[str] = Field(None, description="LMP date")
+    gestational_age_weeks: Optional[float] = Field(None, description="Gestational age in weeks")
+    edd: Optional[str] = Field(None, description="Estimated date of delivery")
+    baseline_vitals: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Baseline vitals and diagnostics")
+    consent_audio_verified: bool = Field(True, description="Dialect audio consent recorded")
+    consent_language: Optional[str] = Field("halbi", description="Consent language")
+    informed_consent_certified: bool = Field(True, description="Informed consent certified")
+    thumbprint_verified: bool = Field(True, description="Thumbprint biometric recorded")
+    mitanin_token_signature: Optional[str] = Field("#K-VERMA", description="Mitanin token digital signature")
+    registration_channel: str = Field("subcenter", description="Channel: subcenter, field_visit, offline_relay")
+    submission_token: Optional[str] = Field(None, description="Idempotency token")
+
+
+class CheckDuplicatePatientRequest(BaseModel):
+    abha_number: Optional[str] = Field(None, description="ABHA number to check")
+    contact_number: Optional[str] = Field(None, description="Phone number to check")
+    full_name_en: Optional[str] = Field(None, description="Full name to check")
+    block_id: Optional[str] = Field(None, description="Block jurisdiction to scope check")
+
+
+class VerifyAbhaRequest(BaseModel):
+    abha_number: str = Field(..., description="14-digit ABHA number string")
+
+
+
+
 
